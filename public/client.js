@@ -2,8 +2,15 @@
 
 const socket = io();
 // --- Initialisation des modales Bootstrap ---
-const thiefModal = new bootstrap.Modal(document.getElementById('thiefModal'));
-const myRoleModal = new bootstrap.Modal(document.getElementById('myRoleModal'));
+let thiefModal, myRoleModal;
+// Sécurité : on vérifie que Bootstrap est bien chargé pour éviter le crash sur mobile
+if (typeof bootstrap !== 'undefined') {
+    thiefModal = new bootstrap.Modal(document.getElementById('thiefModal'));
+    myRoleModal = new bootstrap.Modal(document.getElementById('myRoleModal'));
+} else {
+    console.error("Bootstrap n'a pas pu être chargé.");
+    alert("Erreur : L'interface graphique n'a pas pu charger. Vérifiez votre connexion.");
+}
 
 
 // --- Variables d'état du jeu ---
@@ -193,6 +200,15 @@ document.getElementById('btnWitchKill').addEventListener('click', () => {
 
 // --- Écouteurs Socket.io (Réception des messages du serveur) ---
 
+// Reconnexion automatique
+socket.on('connect', () => {
+    const savedRoom = sessionStorage.getItem('lg_roomId');
+    const savedId = sessionStorage.getItem('lg_playerId');
+    if (savedRoom && savedId) {
+        socket.emit('rejoinGame', { roomId: savedRoom, oldPlayerId: savedId });
+    }
+});
+
 socket.on('roomJoined', (roomId) => {
     document.getElementById('displayRoomId').textContent = roomId;
     loginArea.classList.add('d-none');
@@ -201,6 +217,10 @@ socket.on('roomJoined', (roomId) => {
     // Mettre à jour l'URL sans recharger la page
     const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?room=' + roomId;
     window.history.pushState({path:newUrl}, '', newUrl);
+
+    // Sauvegarde pour reconnexion
+    sessionStorage.setItem('lg_roomId', roomId);
+    sessionStorage.setItem('lg_playerId', socket.id);
 });
 
 socket.on('error', (msg) => {
@@ -248,6 +268,11 @@ socket.on('gameStarted', (initialPlayers) => {
     renderBoard();
     showMyRole(); // Afficher le rôle dès le début
     addLog("La partie commence ! Les rôles ont été distribués.");
+});
+
+socket.on('reconnectFailed', () => {
+    sessionStorage.clear(); // Nettoyer si la session n'est plus valide
+    window.location.href = "/"; // Retour accueil
 });
 
 // Changement de phase (Jour, Nuit, etc.)
@@ -478,8 +503,16 @@ socket.on('gameOver', (data) => {
 
         const li = document.createElement('li');
         li.className = 'text-center mt-3';
-        li.innerHTML = '<button class="btn btn-primary btn-sm" onclick="location.reload()">Retour à l\'accueil</button>';
+        li.innerHTML = `
+            <button class="btn btn-primary btn-sm" onclick="location.reload()">Retour à l'accueil</button>
+            <button class="btn btn-success btn-sm ms-2" id="btnRestart">Rejouer avec les mêmes joueurs</button>
+        `;
         logDiv.appendChild(li);
+        
+        setTimeout(() => {
+            document.getElementById('btnRestart')?.addEventListener('click', () => socket.emit('restartGame'));
+        }, 100);
+
         logDiv.scrollTop = logDiv.scrollHeight;
     } else {
         location.reload();

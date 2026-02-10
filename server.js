@@ -886,6 +886,64 @@ io.on('connection', (socket) => {
         joinRoom(game, playerData);
     });
 
+    // --- Reconnexion Automatique ---
+    socket.on('rejoinGame', ({ roomId, oldPlayerId }) => {
+        const game = games[roomId];
+        if (!game) return socket.emit('reconnectFailed');
+
+        const player = game.players.find(p => p.id === oldPlayerId);
+        if (player) {
+            // Mise à jour de l'ID socket
+            player.id = socket.id;
+            player.disconnected = false;
+            socket.join(roomId);
+            socket.roomId = roomId;
+
+            console.log(`Joueur ${player.name} reconnecté.`);
+
+            if (game.phase === 'waiting') {
+                socket.emit('roomJoined', roomId);
+                io.to(roomId).emit('updatePlayerList', game.players);
+            } else {
+                // Si la partie est en cours, on renvoie l'état
+                socket.emit('gameStarted', game.players);
+                socket.emit('phaseChange', { 
+                    phase: game.phase, 
+                    duration: 1000, // Durée fictive pour afficher la phase
+                    msg: 'Reconnexion en cours...' 
+                });
+            }
+        } else {
+            socket.emit('reconnectFailed');
+        }
+    });
+
+    // --- Relancer la partie ---
+    socket.on('restartGame', () => {
+        const game = games[socket.roomId];
+        if (!game) return;
+
+        // Réinitialisation complète
+        game.phase = 'waiting';
+        game.votes = {};
+        game.turn = 0;
+        game.lovers = null;
+        game.captainId = null;
+        game.thief = null;
+        game.pendingVictim = null;
+        game.witchKillTarget = null;
+        
+        game.players.forEach(p => {
+            p.role = null;
+            p.alive = true;
+            p.potions = { life: true, death: true };
+            p.knowledge = null;
+        });
+
+        io.to(game.id).emit('roomJoined', game.id);
+        io.to(game.id).emit('updatePlayerList', game.players);
+    });
+
     // Ancienne méthode (compatibilité si besoin, redirige vers create)
     socket.on('joinGame', (name) => socket.emit('error', 'Veuillez utiliser les nouveaux boutons.'));
 
@@ -1052,20 +1110,29 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         const game = games[socket.roomId];
-        if (game && game.phase === 'waiting') {
-            game.players = game.players.filter(p => p.id !== socket.id);
-            io.to(game.id).emit('updatePlayerList', game.players);
-            
-            if (game.players.length === 0) {
-                // On attend 2 minutes avant de supprimer la salle pour permettre la reconnexion (mobile)
-                game.deletionTimer = setTimeout(() => {
-                    if (games[game.id] && games[game.id].players.length === 0) {
-                        delete games[game.id];
-                        console.log(`Salle ${game.id} supprimée (inactivité).`);
+        if (game) {
+            const player = game.players.find(p => p.id === socket.id);
+            if (player) player.disconnected = true;
+
+            if (game.phase === 'waiting') {
+                // Délai de grâce de 5 secondes pour reconnexion rapide (ex: refresh page)
+                setTimeout(() => {
+                    // On vérifie si le joueur est toujours marqué déconnecté
+                    if (player && player.disconnected) {
+                        game.players = game.players.filter(p => p.id !== player.id);
+                        io.to(game.id).emit('updatePlayerList', game.players);
+
+                        if (game.players.length === 0) {
+                            game.deletionTimer = setTimeout(() => {
+                                if (games[game.id] && games[game.id].players.length === 0) {
+                                    delete games[game.id];
+                                }
+                            }, 120000); 
+                        }
                     }
-                }, 120000); 
+                }, 5000);
             }
-        } else if (game && game.players.length === 0) {
+        } else if (game && game.players.length === 0 && game.phase !== 'waiting') {
             // Nettoyage si tout le monde part en cours de jeu
             clearTimeout(game.timer);
             delete games[game.id];
