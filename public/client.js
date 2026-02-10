@@ -263,6 +263,9 @@ socket.on('gameStarted', (initialPlayers) => {
     lobbyArea.classList.add('d-none');
     gameArea.style.display = 'block';
     players = initialPlayers; // Stockage initial de la liste des joueurs
+
+    // Mise à jour de l'ID stocké (crucial si on s'est reconnecté, car l'ID socket a changé)
+    localStorage.setItem('lg_playerId', socket.id);
     
     // Initialisation des données du joueur local
     const me = players.find(p => p.id === socket.id);
@@ -489,6 +492,9 @@ socket.on('voteLog', (data) => {
 socket.on('gameOver', (data) => {
     const msg = data.message || data; // Compatibilité
     alert(msg);
+    
+    // La partie est finie, on nettoie le localStorage pour ne pas tenter de rejoindre une partie morte
+    localStorage.removeItem('lg_roomId');
     
     if (data.players) {
         players = data.players; // Mettre à jour avec les rôles révélés

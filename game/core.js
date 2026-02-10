@@ -104,23 +104,6 @@ function handleDisconnect(games, socket, io) {
     const player = game.players.find(p => p.id === socket.id);
     if (player) player.disconnected = true;
 
-    if (game.phase === 'waiting') {
-        setTimeout(() => {
-            if (player && player.disconnected) {
-                game.players = game.players.filter(p => p.id !== player.id);
-                io.to(game.id).emit('updatePlayerList', game.players);
-
-                if (game.players.filter(p => !p.isBot).length === 0) { // S'il ne reste que des bots
-                    game.deletionTimer = setTimeout(() => {
-                        if (games[game.id] && games[game.id].players.filter(p => !p.isBot).length === 0) {
-                            delete games[game.id];
-                            console.log(`Salle ${game.id} supprimée (inactivité).`);
-                        }
-                    }, 120000);
-                }
-            }
-        }, 5000); // 5s de grâce
-    }
 }
 
 function startGame(io, game, { playerCount, devMode, forceRole }, starterId) {
