@@ -173,7 +173,7 @@ btnCopy.addEventListener('click', async () => {
     if (navigator.share) {
         try {
             await navigator.share({
-                title: 'Loups-Garous Web',
+                title: 'Loups-Garous de Thiercelieux (Web)',
                 text: 'Rejoins ma partie de Loups-Garous !',
                 url: url
             });

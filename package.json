@@ -1,7 +1,7 @@
 {
-  "name": "loup-garou-web",
+  "name": "loups-garous-thiercelieux-web",
   "version": "1.0.0",
-  "description": "Une version web du jeu de société Les Loups-Garous de Thiercelieux.",
+  "description": "Jeu de Loups-Garous de Thiercelieux en ligne (Non officiel). Jouez gratuitement avec vos amis ou des bots dans cette version web temps réel.",
   "main": "server.js",
   "private": true,
   "scripts": {

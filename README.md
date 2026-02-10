@@ -1,6 +1,6 @@
-# 🐺 Loups-Garous Web
+# 🐺 Loups-Garous de Thiercelieux (Web Non Officiel)
 
-Une version web en temps réel du jeu de société "Les Loups-Garous de Thiercelieux", développée avec Node.js et Socket.IO.
+Une version web gratuite et en temps réel du célèbre jeu de société "Les Loups-Garous de Thiercelieux", développée avec Node.js et Socket.IO.
 
 ## ✨ Fonctionnalités
 
