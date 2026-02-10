@@ -10,22 +10,6 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
-// Nous avons besoin du corps brut (raw body) de la requête pour vérifier la signature.
-// Nous utilisons donc l'option `verify` d'express.json.
-app.use(express.json({
-    verify: (req, res, buf) => {
-        req.rawBody = buf;
-    }
-}));
-
-// --- Route Webhook pour mise à jour automatique ---
-// Tentative de chargement du module webhook (ignoré par git)
-try {
-    const setupWebhook = require('./webhook');
-    setupWebhook(app);
-} catch (err) {
-    console.log('ℹ️ Module Webhook non trouvé (Mode local ou fichier manquant).');
-}
 
 // --- Stockage des données ---
 // Structure : { roomId: { players, phase, votes, id, turn, lovers, captainId, durations } }

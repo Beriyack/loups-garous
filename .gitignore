@@ -20,6 +20,3 @@ Thumbs.db
 
 # Fichiers de l'éditeur
 .vscode/
-
-# Fichiers de déploiement spécifiques
-webhook.js
