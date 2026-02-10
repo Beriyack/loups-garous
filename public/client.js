@@ -150,16 +150,6 @@ document.getElementById('btnJoinPrivate').addEventListener('click', () => {
     if(playerData && roomId) socket.emit('joinPrivateGame', { playerData, roomId });
 });
 
-document.getElementById('btnJoinPublic').addEventListener('click', () => {
-    const playerData = getPlayerData();
-    if(playerData) socket.emit('joinPublicGame', playerData);
-});
-
-document.getElementById('btnCreatePublic').addEventListener('click', () => {
-    const playerData = getPlayerData();
-    if(playerData) socket.emit('createPublicGame', playerData);
-});
-
 // Bouton de partage
 const btnCopy = document.getElementById('btnCopyLink');
 if (navigator.share) btnCopy.textContent = "Inviter des amis";

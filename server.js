@@ -839,6 +839,12 @@ io.on('connection', (socket) => {
 
     // Fonction helper pour rejoindre une room
     const joinRoom = (game, { name, avatar }) => {
+        // Si la salle était en sursis de suppression, on annule le compte à rebours
+        if (game.deletionTimer) {
+            clearTimeout(game.deletionTimer);
+            game.deletionTimer = null;
+        }
+
         socket.join(game.id);
         socket.roomId = game.id;
 
@@ -873,71 +879,11 @@ io.on('connection', (socket) => {
         joinRoom(games[roomId], playerData);
     });
 
-    socket.on('createPublicGame', (playerData) => {
-        const roomId = generateRoomId();
-        games[roomId] = {
-            id: roomId,
-            players: [],
-            phase: 'waiting',
-            durations: DURATIONS,
-            isPublic: true, // Marqué comme public
-            votes: {},
-            turn: 0,
-            lovers: null,
-            captainId: null,
-            thief: null,
-        };
-        joinRoom(games[roomId], playerData);
-    });
-
     socket.on('joinPrivateGame', ({ playerData, roomId }) => {
         const game = games[roomId];
         if (!game) return socket.emit('error', 'Partie introuvable.');
         if (game.phase !== 'waiting') return socket.emit('error', 'La partie a déjà commencé.');
         joinRoom(game, playerData);
-    });
-
-    socket.on('joinPublicGame', (playerData) => {
-        // 1. Chercher une partie PUBLIQUE en attente
-        let game = Object.values(games).find(g => g.isPublic && g.phase === 'waiting');
-        if (game) {
-            return joinRoom(game, playerData);
-        }
-    
-        // 2. Si aucune salle d'attente, chercher une partie en cours avec un bot à remplacer
-        for (const id in games) {
-            const g = games[id];
-            // On ne peut remplacer un bot que dans une partie publique
-            if (g.isPublic && g.phase !== 'finished' && g.phase !== 'waiting') {
-                const bot = g.players.find(p => p.isBot && p.alive);
-                if (bot) {
-                    // Remplacement du bot par le joueur : Mise à jour des IDs
-                    const oldBotId = bot.id;
-                    socket.join(id);
-                    socket.roomId = id;
-                    bot.id = socket.id; // Le bot prend l'ID du socket du joueur
-                    bot.name = playerData.name;
-                    bot.avatar = playerData.avatar;
-                    bot.isBot = false;
-                    
-                    // Mettre à jour les références (Amoureux, Capitaine, Voleur) avec le nouvel ID
-                    if (g.lovers) {
-                        const idx = g.lovers.indexOf(oldBotId);
-                        if (idx !== -1) g.lovers[idx] = bot.id;
-                    }
-                    if (g.captainId === oldBotId) g.captainId = bot.id;
-                    if (g.thief && g.thief.thiefId === oldBotId) g.thief.thiefId = bot.id;
-                    
-                    socket.emit('roomJoined', id);
-                    socket.emit('gameStarted', g.players); // Charger le plateau
-                    io.to(id).emit('updatePlayerList', g.players);
-                    return;
-                }
-            }
-        }
-    
-        // 3. Si toujours rien, on informe le joueur
-        socket.emit('error', 'Aucune partie publique à rejoindre pour le moment. Essayez d\'en créer une !');
     });
 
     // Ancienne méthode (compatibilité si besoin, redirige vers create)
@@ -1109,7 +1055,16 @@ io.on('connection', (socket) => {
         if (game && game.phase === 'waiting') {
             game.players = game.players.filter(p => p.id !== socket.id);
             io.to(game.id).emit('updatePlayerList', game.players);
-            if (game.players.length === 0) delete games[game.id];
+            
+            if (game.players.length === 0) {
+                // On attend 2 minutes avant de supprimer la salle pour permettre la reconnexion (mobile)
+                game.deletionTimer = setTimeout(() => {
+                    if (games[game.id] && games[game.id].players.length === 0) {
+                        delete games[game.id];
+                        console.log(`Salle ${game.id} supprimée (inactivité).`);
+                    }
+                }, 120000); 
+            }
         } else if (game && game.players.length === 0) {
             // Nettoyage si tout le monde part en cours de jeu
             clearTimeout(game.timer);
