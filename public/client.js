@@ -75,6 +75,13 @@ const witchInterface = document.getElementById('witchInterface');
 // --- Initialisation ---
 
 // Vérifier si un code de salle est présent dans l'URL pour rejoindre direct
+const usernameInput = document.getElementById('username');
+const savedName = localStorage.getItem('lg_playerName');
+if (savedName) {
+    usernameInput.value = savedName;
+    // On pourrait ajouter un bouton "Changer de pseudo" qui clear le localStorage
+}
+
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.has('room')) {
     document.getElementById('roomIdInput').value = urlParams.get('room');
@@ -117,8 +124,8 @@ function updateRolesPreview() {
 
     let usedSlots = numWolves + 4;
 
-    // Voleur (à partir de 10 joueurs)
-    if (count >= 10) {
+    // Voleur (à partir de 9 joueurs, comme sur le serveur)
+    if (count >= 9) {
         roles.push('Voleur');
         usedSlots++;
     }
@@ -202,10 +209,10 @@ document.getElementById('btnWitchKill').addEventListener('click', () => {
 
 // Reconnexion automatique
 socket.on('connect', () => {
-    const savedRoom = sessionStorage.getItem('lg_roomId');
-    const savedId = sessionStorage.getItem('lg_playerId');
+    const savedRoom = localStorage.getItem('lg_roomId');
+    const savedId = localStorage.getItem('lg_playerId');
     if (savedRoom && savedId) {
-        socket.emit('rejoinGame', { roomId: savedRoom, oldPlayerId: savedId });
+        socket.emit('rejoinGame', { roomId: savedRoom, oldPlayerId: savedId, name: localStorage.getItem('lg_playerName') });
     }
 });
 
@@ -219,8 +226,9 @@ socket.on('roomJoined', (roomId) => {
     window.history.pushState({path:newUrl}, '', newUrl);
 
     // Sauvegarde pour reconnexion
-    sessionStorage.setItem('lg_roomId', roomId);
-    sessionStorage.setItem('lg_playerId', socket.id);
+    localStorage.setItem('lg_roomId', roomId);
+    localStorage.setItem('lg_playerId', socket.id);
+    localStorage.setItem('lg_playerName', document.getElementById('username').value);
 });
 
 socket.on('error', (msg) => {
@@ -271,7 +279,9 @@ socket.on('gameStarted', (initialPlayers) => {
 });
 
 socket.on('reconnectFailed', () => {
-    sessionStorage.clear(); // Nettoyer si la session n'est plus valide
+    localStorage.removeItem('lg_roomId');
+    localStorage.removeItem('lg_playerId');
+    // On garde le nom du joueur pour le confort
     window.location.href = "/"; // Retour accueil
 });
 
