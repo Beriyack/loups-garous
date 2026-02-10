@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loups-Garous Web</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- En-tête fixe pour mobile -->
+<header class="sticky-top bg-dark border-bottom border-secondary mb-3 shadow-sm" style="z-index: 1020;">
+    <div class="container py-2">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h5 m-0 text-white" style="cursor: pointer;" onclick="location.reload()">🐺 LG Web</h1>
+            <div>
+                <button class="btn btn-sm btn-info me-1" data-bs-toggle="modal" data-bs-target="#rulesModal">Règles</button>
+            </div>
+        </div>
+        <div id="phaseDisplay" class="alert alert-warning text-center m-0 mt-2 py-1 small">
+            En attente... <span id="timerDisplay" class="badge bg-dark ms-2">--:--</span>
+        </div>
+    </div>
+</header>
+
+<main class="container pb-5">
+    <!-- =================================================================== -->
+    <!-- Zone de Connexion -->
+    <!-- =================================================================== -->
+    <div id="loginArea" class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card p-4 shadow">
+                <div class="mb-3">
+                    <label for="username" class="form-label">Votre Pseudo</label>
+                    <input type="text" class="form-control" id="username" placeholder="Entrez votre nom">
+                </div>
+                
+                <hr>
+                <div class="d-grid gap-2">
+                    <button id="btnCreatePrivate" class="btn btn-primary">Créer une partie privée</button>
+                    <div class="input-group">
+                        <input type="text" id="roomIdInput" class="form-control" placeholder="Code de la partie (ex: X7K9P)">
+                        <button id="btnJoinPrivate" class="btn btn-outline-primary">Rejoindre</button>
+                    </div>
+                    <div class="btn-group mt-2">
+                        <button id="btnCreatePublic" class="btn btn-success">Créer une partie publique</button>
+                        <button id="btnJoinPublic" class="btn btn-outline-success">Rejoindre une partie publique</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- Zone de Lobby -->
+    <!-- =================================================================== -->
+    <div id="lobbyArea" class="row justify-content-center d-none">
+        <div class="col-md-8 text-center">
+            <div class="alert alert-info">
+                Salle : <strong id="displayRoomId">...</strong>
+                <button id="btnCopyLink" class="btn btn-outline-secondary btn-sm ms-2">Copier le lien</button>
+                | En attente des joueurs...
+            </div>
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <ul id="playerList" class="list-group mb-3 text-dark"></ul>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-3 text-dark">
+                        <label for="playerCount" class="form-label">Nombre de joueurs</label>
+                        <select id="playerCount" class="form-select mb-3">
+                            <option value="8" selected>8 Joueurs</option>
+                            <option value="9">9 Joueurs</option>
+                            <option value="10">10 Joueurs</option>
+                            <option value="11">11 Joueurs</option>
+                            <option value="12">12 Joueurs</option>
+                            <option value="13">13 Joueurs</option>
+                            <option value="14">14 Joueurs</option>
+                            <option value="15">15 Joueurs</option>
+                            <option value="16">16 Joueurs</option>
+                            <option value="17">17 Joueurs</option>
+                            <option value="18">18 Joueurs</option>
+                        </select>
+                        <div id="rolesPreview" class="mb-3 small text-muted"></div>
+                        
+                        <hr>
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="devMode">
+                            <label class="form-check-label small" for="devMode">Mode Développeur (Bots rapides)</label>
+                        </div>
+                        <select id="forceRole" class="form-select form-select-sm mb-3 d-none">
+                            <option value="">Rôle aléatoire</option>
+                            <!-- Rempli par JS -->
+                        </select>
+
+                        <button id="btnStart" class="btn btn-success btn-lg">Lancer la partie</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- Zone de Jeu -->
+    <!-- =================================================================== -->
+    <div id="gameArea">
+        <div class="row" id="gameBoard">
+            <!-- Les cartes des joueurs seront générées ici -->
+        </div>
+        
+        <ul id="gameLog" class="list-unstyled mt-4 p-3 bg-dark border rounded" style="height: 150px; overflow-y: scroll;">
+            <li class="text-muted small">Journal de la partie...</li>
+        </ul>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- Interface Sorcière (Cachée par défaut) -->
+    <!-- =================================================================== -->
+    <div id="witchInterface" class="position-fixed bottom-0 start-0 w-100 bg-dark p-3 border-top border-warning" style="display: none; z-index: 1000;">
+        <div class="container text-center">
+            <h4 class="text-warning">🧙‍♀️ Action Sorcière</h4>
+            <p id="witchInfo" class="text-white"></p>
+            <div class="d-flex justify-content-center gap-2">
+                <button id="btnWitchSave" class="btn btn-success">Sauver la victime</button>
+                <button id="btnWitchKill" class="btn btn-danger">Utiliser Potion de Mort</button>
+                <button id="btnWitchSkip" class="btn btn-secondary">Ne rien faire</button>
+            </div>
+            <div id="witchKillSelect" class="mt-2 d-none">
+                <p class="text-white">Cliquez sur un joueur pour le tuer.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- Modal de ma carte -->
+    <!-- =================================================================== -->
+    <div class="modal fade" id="myRoleModal" tabindex="-1" aria-labelledby="myRoleModalTitle" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="myRoleModalTitle">Mon Rôle</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- <img id="myRoleModalImage" src="" class="img-fluid mb-3"> -->
+                    <p id="myRoleModalDescription"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- Modal du Voleur -->
+    <!-- =================================================================== -->
+    <div class="modal fade" id="thiefModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-labelledby="thiefModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="thiefModalTitle">👤 Tour du Voleur</h5>
+                </div>
+                <div class="modal-body">
+                    <p>Vous êtes le Voleur. Voici votre carte actuelle et les deux cartes disponibles. Cliquez sur une carte pour l'échanger ou attendez la fin du temps pour garder la vôtre.</p>
+                    <div class="row text-center justify-content-center" id="thiefChoices">
+                        <!-- Les cartes du Voleur seront générées ici -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- =================================================================== -->
+    <!-- Modal des règles -->
+    <!-- =================================================================== -->
+    <div class="modal fade" id="rulesModal" tabindex="-1" aria-labelledby="rulesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="rulesModalLabel">Règles du jeu et Rôles</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h5>But du jeu</h5>
+                    <p><strong>Pour les Villageois :</strong> Éliminer tous les Loups-Garous.</p>
+                    <p><strong>Pour les Loups-Garous :</strong> Éliminer tous les Villageois.</p>
+                    <hr>
+                    <h5>Les Rôles</h5>
+                    <dl>
+                        <dt>🐺 Loup-Garou</dt>
+                        <dd>Chaque nuit, ils se concertent pour dévorer un Villageois. Le jour, ils doivent se faire passer pour des innocents.</dd>
+                        
+                        <dt>🧑‍🌾 Simple Villageois</dt>
+                        <dd>Il n'a aucune compétence particulière, mais son vote est crucial pour éliminer les Loups-Garous.</dd>
+
+                        <dt>🧙‍♀️ Sorcière</dt>
+                        <dd>Dispose de deux potions uniques : une pour sauver la victime des loups, une pour empoisonner un joueur de son choix durant la nuit.</dd>
+
+                        <dt>👁️ Voyante</dt>
+                        <dd>Chaque nuit, elle peut espionner un joueur et découvrir son vrai rôle. Elle doit aider le village avec discrétion.</dd>
+
+                        <dt>🏹 Chasseur</dt>
+                        <dd>S'il est éliminé (de n'importe quelle manière), il a le droit d'utiliser sa dernière balle pour tuer immédiatement un autre joueur de son choix.</dd>
+
+                        <dt>💘 Cupidon</dt>
+                        <dd>La première nuit, il désigne deux joueurs qui tombent amoureux. Si l'un meurt, l'autre meurt de chagrin. Si l'un est Loup et l'autre Villageois, leur but devient d'éliminer tous les autres joueurs pour gagner seuls.</dd>
+
+                        <dt>👤 Le Voleur</dt>
+                        <dd>La première nuit, il peut échanger sa carte avec l'une des deux cartes non distribuées. S'il y a un Loup-Garou, il peut être forcé de le devenir.</dd>
+
+                        <dt>👑 Capitaine / Maire</dt>
+                        <dd>Élu par les joueurs, son vote compte double. S'il meurt, il désigne son successeur.</dd>
+                    </dl>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Socket.io & Bootstrap JS -->
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+<script src="client.js"></script>
+</body>
+</html>

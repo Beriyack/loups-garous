@@ -1,0 +1,25 @@
+# Dépendances
+/node_modules
+
+# Fichiers de log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+deploy.log
+
+# Fichiers de configuration d'environnement
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Fichiers générés par le système d'exploitation
+.DS_Store
+Thumbs.db
+
+# Fichiers de l'éditeur
+.vscode/
+
+# Fichiers de déploiement spécifiques
+webhook.php

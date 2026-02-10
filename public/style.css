@@ -1,0 +1,125 @@
+/* ==========================================================================
+   1. Thème et Variables
+   ========================================================================== */
+
+:root {
+  --bg-color: #2c3e50;
+  --text-color: white;
+  --card-text-color: #333;
+  --primary-color: #0d6efd;
+  --danger-color: #dc3545; /* Couleur "danger" de Bootstrap */
+}
+
+/* ==========================================================================
+   2. Styles Globaux & Helpers
+   ========================================================================== */
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+/* Ajustement pour le header fixe */
+main {
+  padding-top: 10px;
+}
+
+/* S'assure que la zone de jeu est cachée au début */
+#gameArea { display: none; }
+/* ==========================================================================
+   3. Composants
+   ========================================================================== */
+
+/* --- Cartes de base (utilisées pour le lobby, etc.) --- */
+.card {
+  color: var(--card-text-color);
+}
+
+/* --- Cartes de Joueur --- */
+.role-card {
+  cursor: pointer;
+  /* Ajout d'une bordure transparente pour éviter le décalage au survol */
+  border: 3px solid transparent;
+  transition: transform 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+.role-card:hover {
+  transform: scale(1.05);
+  border-color: var(--primary-color);
+}
+
+/* Style pour la carte du joueur lui-même */
+.my-card {
+  background-color: #1abc9c !important; /* Bleu-vert distinctif */
+  color: white !important; /* Texte blanc forcé */
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.3); /* Lueur dorée légère */
+}
+
+/* S'assurer que le texte "Vivant/Mort" est lisible sur ma carte */
+.my-card .text-muted {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.player-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+  object-fit: cover; /* Empêche la déformation des images */
+}
+
+.card-icon {
+  font-size: 1.5rem;
+  line-height: 1; /* Améliore l'alignement vertical */
+}
+
+/* --- Sélection d'Avatar (Lobby) --- */
+.avatar-select img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease-in-out, opacity 0.2s ease-in-out;
+}
+
+.avatar-select img:hover {
+  opacity: 0.8;
+}
+
+.avatar-select img.selected {
+  border-color: var(--primary-color);
+  opacity: 1;
+}
+
+
+/* ==========================================================================
+   4. États du jeu
+   ========================================================================== */
+
+/* --- État "Mort" --- */
+.dead {
+  opacity: 0.6;
+  filter: grayscale(90%); /* Effet visuel plus marqué pour les morts */
+  text-decoration: line-through;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Désactive les effets de survol sur les cartes des morts */
+.dead .role-card:hover {
+  transform: none;
+  border-color: transparent;
+}
+
+/* --- État "Cible" (pour Voyante, Chasseur, etc.) --- */
+.role-card:is(.cupid-target, .seer-target, .captain-target, .hunter-target) {
+  border-color: var(--danger-color);
+  border-style: dashed;
+  cursor: crosshair;
+}
+
+/* On s'assure que la couleur de la bordure ne change pas au survol quand c'est une cible */
+.role-card:is(.cupid-target, .seer-target, .captain-target, .hunter-target):hover {
+  border-color: var(--danger-color);
+}
