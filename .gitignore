@@ -22,4 +22,4 @@ Thumbs.db
 .vscode/
 
 # Fichiers de déploiement spécifiques
-webhook.php
+webhook.js

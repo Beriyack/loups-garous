@@ -10,6 +10,22 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
+// Nous avons besoin du corps brut (raw body) de la requête pour vérifier la signature.
+// Nous utilisons donc l'option `verify` d'express.json.
+app.use(express.json({
+    verify: (req, res, buf) => {
+        req.rawBody = buf;
+    }
+}));
+
+// --- Route Webhook pour mise à jour automatique ---
+// Tentative de chargement du module webhook (ignoré par git)
+try {
+    const setupWebhook = require('./webhook');
+    setupWebhook(app);
+} catch (err) {
+    console.log('ℹ️ Module Webhook non trouvé (Mode local ou fichier manquant).');
+}
 
 // --- Stockage des données ---
 // Structure : { roomId: { players, phase, votes, id, turn, lovers, captainId, durations } }
@@ -984,7 +1000,7 @@ io.on('connection', (socket) => {
         rolesToAssign.push('Voyante');
         rolesToAssign.push('Chasseur');
         rolesToAssign.push('Cupidon');
-        if (parseInt(playerCount) >= 10) { // Le voleur est dispo à partir de 10 joueurs
+        if (parseInt(playerCount) >= 9) { // Le voleur est dispo à partir de 9 joueurs
             rolesToAssign.push('Voleur');
             hasThief = true;
         }
