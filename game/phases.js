@@ -338,8 +338,11 @@ function endCaptainElection(io, game) {
         const electedId = candidates[Math.floor(Math.random() * candidates.length)];
         game.captainId = electedId;
         const captain = game.players.find(p => p.id === electedId);
-        io.to(game.id).emit('info', `👑 ${captain.name} a été élu(e) Capitaine ! Son vote compte double.`);
-        io.to(game.id).emit('captainChange', electedId);
+        // Sécurité : on vérifie que le capitaine existe avant d'annoncer son nom
+        if (captain) {
+            io.to(game.id).emit('info', `👑 ${captain.name} a été élu(e) Capitaine ! Son vote compte double.`);
+            io.to(game.id).emit('captainChange', electedId);
+        }
     } else {
         io.to(game.id).emit('info', `👑 Personne n'a été élu. Il n'y a pas de Capitaine pour le moment.`);
     }
@@ -359,8 +362,13 @@ async function endDayPhase(io, game) {
     const counts = {};
     game.players.forEach(p => counts[p.id] = 0);
     for (const [voterId, targetId] of Object.entries(game.votes)) {
-        if (counts[targetId] !== undefined) {
+        // On s'assure que la cible existe toujours
+        if (counts.hasOwnProperty(targetId)) {
             counts[targetId]++;
+            // Le vote du capitaine compte double
+            if (voterId === game.captainId) {
+                counts[targetId]++;
+            }
         }
     }
 
@@ -378,14 +386,7 @@ async function endDayPhase(io, game) {
     let victimId = null;
     if (candidates.length === 1) {
         victimId = candidates[0];
-    } else if (candidates.length > 1) {
-        const captainVote = game.votes[game.captainId];
-        if (captainVote && candidates.includes(captainVote)) {
-            victimId = captainVote;
-        } else {
-            victimId = null;
-        }
-    } else {
+    } else if (candidates.length > 1) { // En cas d'égalité, on choisit au hasard parmi les ex aequo
         victimId = candidates[Math.floor(Math.random() * candidates.length)];
     }
 
